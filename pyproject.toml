@@ -1,7 +1,7 @@
 [project]
-name = "pocketlm"
+name = "PocketLM"
 version = "0.1.0"
-description = "Add your description here"
+description = "PocketLM is a lightweight, low-latency language model optimized for edge deployment and micro-tasks. Built specifically to bypass the overhead of massive foundational models, it delivers fast, reliable performance for high-volume, single-turn tasks like data classification, entity extraction, and text summarization. Minimal VRAM, maximum utility."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = []
