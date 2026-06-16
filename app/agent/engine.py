@@ -10,10 +10,14 @@ from app.agent.schemas import AgentResult, TaskType
 
 
 class ModelClient(Protocol):
+    """Minimal async interface for model backends."""
+
     async def generate(self, prompt: str) -> str: ...
 
 
 class EchoModelClient:
+    """Test helper that echoes the prompt back as the model output."""
+
     async def generate(self, prompt: str) -> str:
         return prompt
 
@@ -29,12 +33,15 @@ class AgentState(TypedDict, total=False):
 
 @dataclass
 class AgentEngine:
+    """LangGraph-based execution engine for lightweight PocketLM tasks."""
     model_client: ModelClient
 
     def __post_init__(self) -> None:
+        """Compile the graph once when the engine is constructed."""
         self._graph = self._build_graph().compile()
 
     async def run(self, task_type: TaskType, text: str) -> AgentResult:
+        """Execute the graph and return a structured result."""
         state = await self._graph.ainvoke({"task_type": task_type, "text": text, "metadata": {}})
         return AgentResult(
             task_type=task_type,
@@ -43,6 +50,7 @@ class AgentEngine:
         )
 
     def _build_graph(self) -> StateGraph[AgentState]:
+        """Build the minimal prompt -> model -> postprocess graph."""
         graph = StateGraph(AgentState)
         graph.add_node("build_prompt", self._build_prompt)
         graph.add_node("call_model", self._call_model)
@@ -54,6 +62,7 @@ class AgentEngine:
         return graph
 
     async def _build_prompt(self, state: AgentState) -> AgentState:
+        """Create a task-specific prompt from the current state."""
         task_type = state["task_type"]
         text = state["text"]
         if task_type is TaskType.classification:
@@ -63,10 +72,12 @@ class AgentEngine:
         return {**state, "prompt": prompt}
 
     async def _call_model(self, state: AgentState) -> AgentState:
+        """Send the generated prompt to the configured model client."""
         raw_output = await self.model_client.generate(state["prompt"])
         return {**state, "raw_output": raw_output}
 
     async def _postprocess(self, state: AgentState) -> AgentState:
+        """Normalize model output and apply deterministic fallbacks."""
         task_type = state["task_type"]
         raw_output = state.get("raw_output", "").strip()
         text = state["text"]
@@ -90,6 +101,7 @@ _KEYWORDS = {
 
 
 def _fallback_classification(text: str) -> str:
+    """Infer a coarse label from keywords when the model is blank."""
     lowered = text.lower()
     for keyword, label in _KEYWORDS.items():
         if keyword in lowered:
@@ -98,6 +110,7 @@ def _fallback_classification(text: str) -> str:
 
 
 def _fallback_summary(text: str) -> str:
+    """Collapse whitespace and truncate long summaries to one short paragraph."""
     text = re.sub(r"\s+", " ", text).strip()
     if len(text) <= 140:
         return text

@@ -11,12 +11,14 @@ from app.memory.checkpointer import InMemoryCheckpointer
 
 @dataclass
 class AgentService:
+    """Application service coordinating execution, memory, and limits."""
     engine: AgentEngine
     checkpointer: InMemoryCheckpointer = field(default_factory=InMemoryCheckpointer)
     semaphore: asyncio.Semaphore = field(default_factory=lambda: asyncio.Semaphore(4))
     acquire_timeout_seconds: float = 0.0
 
     async def run(self, request: AgentRunRequest) -> AgentResult:
+        """Validate the request, execute the engine, and persist memory state."""
         if request.use_memory and not request.conversation_id:
             raise TaskValidationError("conversation_id is required when use_memory is enabled")
 
@@ -45,6 +47,7 @@ class AgentService:
             self.semaphore.release()
 
     async def _acquire_slot(self) -> bool:
+        """Attempt to reserve a concurrency slot within the configured timeout."""
         try:
             if self.acquire_timeout_seconds > 0:
                 await asyncio.wait_for(self.semaphore.acquire(), timeout=self.acquire_timeout_seconds)

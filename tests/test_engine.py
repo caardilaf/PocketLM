@@ -7,7 +7,7 @@ from app.agent.schemas import TaskType
 class StubModel:
     def __init__(self, response: str):
         self.response = response
-        self.prompts = []
+        self.prompts: list[str] = []
 
     async def generate(self, prompt: str) -> str:
         self.prompts.append(prompt)

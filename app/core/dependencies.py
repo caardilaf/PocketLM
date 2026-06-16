@@ -10,6 +10,7 @@ _service: AgentService | None = None
 
 
 def get_agent_service() -> AgentService:
+    """Build or return the singleton service used by API routes."""
     global _service
     if _service is None:
         settings = get_settings()

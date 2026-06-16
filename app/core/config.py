@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 
 
 class Settings(BaseModel):
+    """Central application settings shared across the app."""
     app_name: str = "PocketLM API"
     version: str = "0.1.0"
     max_concurrent_requests: int = Field(default=4, ge=1)
@@ -12,4 +13,5 @@ class Settings(BaseModel):
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
+    """Return the cached application settings instance."""
     return Settings()
